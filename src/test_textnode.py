@@ -1,7 +1,7 @@
 import unittest
 
 from textnode import TextNode, TextType
-from main import text_node_to_html_node
+from main import text_node_to_html_node, split_nodes_delimiter
 from htmlnode import LeafNode
 
 
@@ -95,6 +95,56 @@ class TestTextNodeToHTMLNode(unittest.TestCase):
         self.assertEqual(html_node.tag, "a")
         self.assertEqual(html_node.value, "Link text")
         self.assertEqual(html_node.props, {"href": None})
+
+class TestSplitNodesDelimiter(unittest.TestCase):
+    def test_no_delimiter(self):
+        """Test a single node with no delimiter remains unchanged."""
+        node = TextNode("Plain text", TextType.NORMAL_TEXT)
+        result = split_nodes_delimiter([node], "**", TextType.BOLD_TEXT)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].text, "Plain text")
+        self.assertEqual(result[0].text_type, TextType.NORMAL_TEXT)
+
+    def test_paired_delimiters(self):
+        """Test a node with one pair of delimiters splits correctly."""
+        node = TextNode("This is **bold** text", TextType.NORMAL_TEXT)
+        result = split_nodes_delimiter([node], "**", TextType.BOLD_TEXT)
+        self.assertEqual(len(result), 3)
+        self.assertEqual(result[0], TextNode("This is ", TextType.NORMAL_TEXT))
+        self.assertEqual(result[1], TextNode("bold", TextType.BOLD_TEXT))
+        self.assertEqual(result[2], TextNode(" text", TextType.NORMAL_TEXT))
+
+    def test_unmatched_delimiter(self):
+        """Test an unmatched delimiter raises an exception."""
+        node = TextNode("This is **bold", TextType.NORMAL_TEXT)
+        with self.assertRaises(Exception) as context:
+            split_nodes_delimiter([node], "**", TextType.BOLD_TEXT)
+        self.assertEqual(str(context.exception), "invalid markdown syntax")
+
+    def test_mixed_nodes(self):
+        """Test a mix of NORMAL_TEXT and non-NORMAL_TEXT nodes."""
+        node1 = TextNode("This is _italic_", TextType.NORMAL_TEXT)
+        node2 = TextNode("Already bold", TextType.BOLD_TEXT)
+        result = split_nodes_delimiter([node1, node2], "_", TextType.ITALIC_TEXT)
+        self.assertEqual(len(result), 3)
+        self.assertEqual(result[0], TextNode("This is ", TextType.NORMAL_TEXT))
+        self.assertEqual(result[1], TextNode("italic", TextType.ITALIC_TEXT))
+        self.assertEqual(result[2], TextNode("Already bold", TextType.BOLD_TEXT))
+
+    def test_multiple_delimiter_pairs(self):
+        """Test a node with multiple delimiter pairs."""
+        node = TextNode("**bold** and **strong**", TextType.NORMAL_TEXT)
+        result = split_nodes_delimiter([node], "**", TextType.BOLD_TEXT)
+        self.assertEqual(len(result), 3)
+        self.assertEqual(result[0], TextNode("bold", TextType.BOLD_TEXT))
+        self.assertEqual(result[1], TextNode(" and ", TextType.NORMAL_TEXT))
+        self.assertEqual(result[2], TextNode("strong", TextType.BOLD_TEXT))
+
+    def test_empty_string(self):
+        """Test a node with an empty string."""
+        node = TextNode("", TextType.NORMAL_TEXT)
+        result = split_nodes_delimiter([node], "**", TextType.BOLD_TEXT)
+        self.assertEqual(len(result), 0)
 
 if __name__ == "__main__":
     unittest.main()

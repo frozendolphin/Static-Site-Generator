@@ -24,6 +24,30 @@ def text_node_to_html_node(text_node):
             return LeafNode("img", "", prop)   
         case _:
             raise Exception("No pattern match")         
+
+def split_nodes_delimiter(old_nodes, delimiter, text_type):
+    new_nodes = []
+    for old_node in old_nodes:
+        if old_node.text_type != TextType.NORMAL_TEXT:
+            new_nodes.append(old_node)
+            continue
+        splitted_list = old_node.text.split(delimiter)
+        if len(splitted_list)%2 == 0:
+            raise Exception("invalid markdown syntax")
+        
+        for i in range(len(splitted_list)):
+            if splitted_list[i] == "":
+                continue
+            if i%2 == 0:
+                new_nodes.append(TextNode(splitted_list[i], TextType.NORMAL_TEXT))
+            else:
+                new_nodes.append(TextNode(splitted_list[i], text_type))
+    return new_nodes
+             
+    
+    
+    
+    
     
     
 if __name__ == "__main__":
