@@ -1,6 +1,6 @@
 import unittest
 
-from htmlnode import HTMLNode, LeafNode
+from htmlnode import HTMLNode, LeafNode, ParentNode
 
 class TestHTMLnode(unittest.TestCase):
 
@@ -49,6 +49,30 @@ class TestHTMLnode(unittest.TestCase):
         node = LeafNode(None, None)
         with self.assertRaises(ValueError):
             node.to_html()
-    
+            
+    def test_to_html_with_children(self):
+        child_node = LeafNode("span", "child")
+        parent_node = ParentNode("div", [child_node])
+        self.assertEqual(parent_node.to_html(), "<div><span>child</span></div>")
+
+    def test_to_html_with_grandchildren(self):
+        grandchild_node = LeafNode("b", "grandchild")
+        child_node = ParentNode("span", [grandchild_node])
+        parent_node = ParentNode("div", [child_node])
+        self.assertEqual(
+            parent_node.to_html(),
+            "<div><span><b>grandchild</b></span></div>",
+        )
+        
+    def test_to_html_parent_leaf(self):
+        lf1 = LeafNode("a", "Click Me!", {"href": "https://www.google.com", "target": "_blank"})
+        lf2 = LeafNode("p", "Hello, world!")  
+        p1 = ParentNode("p", [lf2])
+        p2 = ParentNode("h1", [lf1, p1])
+        self.assertEqual(
+            p2.to_html(),
+            '<h1><a href="https://www.google.com" target="_blank">Click Me!</a><p><p>Hello, world!</p></p></h1>'
+        )       
+                
 if __name__ == "__main__":
     unittest.main()
