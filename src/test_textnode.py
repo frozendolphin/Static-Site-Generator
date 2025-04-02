@@ -1,7 +1,7 @@
 import unittest
 
 from textnode import TextNode, TextType
-from main import text_node_to_html_node, split_nodes_delimiter
+from main import text_node_to_html_node, split_nodes_delimiter, extract_markdown_images, extract_markdown_links
 from htmlnode import LeafNode
 
 
@@ -145,6 +145,81 @@ class TestSplitNodesDelimiter(unittest.TestCase):
         node = TextNode("", TextType.NORMAL_TEXT)
         result = split_nodes_delimiter([node], "**", TextType.BOLD_TEXT)
         self.assertEqual(len(result), 0)
+ 
+
+class TestMarkdownExtractors(unittest.TestCase):
+    
+    def test_extract_markdown_images(self):
+        matches = extract_markdown_images(
+        "This is text with an ![image](https://i.imgur.com/zjjcJKZ.png)"
+        )
+        self.assertListEqual([("image", "https://i.imgur.com/zjjcJKZ.png")], matches)
+    
+    def test_extract_markdown_images_basic(self):
+        text = "Here's an image ![alt text](http://example.com/image.jpg)"
+        expected = [("alt text", "http://example.com/image.jpg")]
+        result = extract_markdown_images(text)
+        self.assertEqual(result, expected)
+    
+    def test_extract_markdown_images_multiple(self):
+        text = "![img1](url1) Some text ![img2](url2) ![img3](url3)"
+        expected = [("img1", "url1"), ("img2", "url2"), ("img3", "url3")]
+        result = extract_markdown_images(text)
+        self.assertEqual(result, expected)
+    
+    def test_extract_markdown_images_empty(self):
+        text = "No images here"
+        expected = []
+        result = extract_markdown_images(text)
+        self.assertEqual(result, expected)
+    
+    def test_extract_markdown_images_no_alt_text(self):
+        text = "![](http://example.com/image.jpg)"
+        expected = [("", "http://example.com/image.jpg")]
+        result = extract_markdown_images(text)
+        self.assertEqual(result, expected)
+    
+    def test_extract_markdown_images_malformed(self):
+        text = "![alt text](missing parenthesis"
+        expected = []
+        result = extract_markdown_images(text)
+        self.assertEqual(result, expected)
+    
+    def test_extract_markdown_links_basic(self):
+        text = "Here's a [link](http://example.com)"
+        expected = [("link", "http://example.com")]
+        result = extract_markdown_links(text)
+        self.assertEqual(result, expected)
+    
+    def test_extract_markdown_links_multiple(self):
+        text = "[link1](url1) then [link2](url2) and [link3](url3)"
+        expected = [("link1", "url1"), ("link2", "url2"), ("link3", "url3")]
+        result = extract_markdown_links(text)
+        self.assertEqual(result, expected)
+    
+    def test_extract_markdown_links_empty(self):
+        text = "No links here"
+        expected = []
+        result = extract_markdown_links(text)
+        self.assertEqual(result, expected)
+    
+    def test_extract_markdown_links_no_text(self):
+        text = "[](http://example.com)"
+        expected = [("", "http://example.com")]
+        result = extract_markdown_links(text)
+        self.assertEqual(result, expected)
+    
+    def test_extract_markdown_links_with_images(self):
+        text = "![img](img_url) and [link](link_url)"
+        expected = [("link", "link_url")]  # Should not match image syntax
+        result = extract_markdown_links(text)
+        self.assertEqual(result, expected)
+    
+    def test_extract_markdown_images_with_links(self):
+        text = "[link](link_url) and ![img](img_url)"
+        expected = [("img", "img_url")]  # Should not match link syntax
+        result = extract_markdown_images(text)
+        self.assertEqual(result, expected)
 
 if __name__ == "__main__":
     unittest.main()
