@@ -1,7 +1,7 @@
 import unittest
 
 from textnode import TextNode, TextType
-from main import text_node_to_html_node, split_nodes_delimiter, extract_markdown_images, extract_markdown_links
+from main import text_node_to_html_node, split_nodes_delimiter, extract_markdown_images, extract_markdown_links, split_nodes_image, split_nodes_link, text_to_textnodes
 from htmlnode import LeafNode
 
 
@@ -219,6 +219,234 @@ class TestMarkdownExtractors(unittest.TestCase):
         text = "[link](link_url) and ![img](img_url)"
         expected = [("img", "img_url")]  # Should not match link syntax
         result = extract_markdown_images(text)
+        self.assertEqual(result, expected)
+
+
+class TestSplitNodes(unittest.TestCase):
+    
+    def test_split_images(self):
+        node = TextNode(
+            "This is text with an ![image](https://i.imgur.com/zjjcJKZ.png) and another ![second image](https://i.imgur.com/3elNhQu.png)",
+            TextType.NORMAL_TEXT,
+        )
+        new_nodes = split_nodes_image([node])
+        self.assertListEqual(
+            [
+                TextNode("This is text with an ", TextType.NORMAL_TEXT),
+                TextNode("image", TextType.IMAGES, "https://i.imgur.com/zjjcJKZ.png"),
+                TextNode(" and another ", TextType.NORMAL_TEXT),
+                TextNode(
+                    "second image", TextType.IMAGES, "https://i.imgur.com/3elNhQu.png"
+                ),
+            ],
+            new_nodes,
+        )    
+
+    def test_split_nodes_image_empty_list(self):
+        """Test split_nodes_image with an empty list"""
+        result = split_nodes_image([])
+        self.assertEqual(result, [])
+
+    def test_split_nodes_image_single_image(self):
+        """Test split_nodes_image with one image markdown"""
+        nodes = [TextNode("This is an ![image](http://example.com/img.jpg) here", TextType.NORMAL_TEXT)]
+        result = split_nodes_image(nodes)
+        expected = [
+            TextNode("This is an ", TextType.NORMAL_TEXT),
+            TextNode("image", TextType.IMAGES, "http://example.com/img.jpg"),
+            TextNode(" here", TextType.NORMAL_TEXT)
+        ]
+        self.assertEqual(result, expected)
+
+    def test_split_nodes_image_multiple_images(self):
+        """Test split_nodes_image with multiple images"""
+        nodes = [TextNode("![img1](url1) text ![img2](url2)", TextType.NORMAL_TEXT)]
+        result = split_nodes_image(nodes)
+        expected = [
+            TextNode("img1", TextType.IMAGES, "url1"),
+            TextNode(" text ", TextType.NORMAL_TEXT),
+            TextNode("img2", TextType.IMAGES, "url2")
+        ]
+        self.assertEqual(result, expected)
+
+    def test_split_nodes_image_non_text_node(self):
+        """Test split_nodes_image with non-text node"""
+        nodes = [TextNode("Bold text", TextType.BOLD_TEXT)]
+        result = split_nodes_image(nodes)
+        expected = [TextNode("Bold text", TextType.BOLD_TEXT)]
+        self.assertEqual(result, expected)
+
+    def test_split_nodes_image_empty_string(self):
+        """Test split_nodes_image with empty string node"""
+        nodes = [TextNode("", TextType.NORMAL_TEXT)]
+        result = split_nodes_image(nodes)
+        self.assertEqual(result, [])
+
+    def test_split_nodes_image_no_images(self):
+        """Test split_nodes_image with text but no images"""
+        nodes = [TextNode("Just plain text", TextType.NORMAL_TEXT)]
+        result = split_nodes_image(nodes)
+        expected = [TextNode("Just plain text", TextType.NORMAL_TEXT)]
+        self.assertEqual(result, expected)
+
+    def test_split_nodes_link_empty_list(self):
+        """Test split_nodes_link with an empty list"""
+        result = split_nodes_link([])
+        self.assertEqual(result, [])
+
+    def test_split_nodes_link_single_link(self):
+        """Test split_nodes_link with one link markdown"""
+        nodes = [TextNode("This is a [link](http://example.com) here", TextType.NORMAL_TEXT)]
+        result = split_nodes_link(nodes)
+        expected = [
+            TextNode("This is a ", TextType.NORMAL_TEXT),
+            TextNode("link", TextType.LINKS, "http://example.com"),
+            TextNode(" here", TextType.NORMAL_TEXT)
+        ]
+        self.assertEqual(result, expected)
+
+    def test_split_nodes_link_multiple_links(self):
+        """Test split_nodes_link with multiple links"""
+        nodes = [TextNode("[link1](url1) text [link2](url2)", TextType.NORMAL_TEXT)]
+        result = split_nodes_link(nodes)
+        expected = [
+            TextNode("link1", TextType.LINKS, "url1"),
+            TextNode(" text ", TextType.NORMAL_TEXT),
+            TextNode("link2", TextType.LINKS, "url2")
+        ]
+        self.assertEqual(result, expected)
+
+    def test_split_nodes_link_non_text_node(self):
+        """Test split_nodes_link with non-text node"""
+        nodes = [TextNode("Italic text", TextType.ITALIC_TEXT)]
+        result = split_nodes_link(nodes)
+        expected = [TextNode("Italic text", TextType.ITALIC_TEXT)]
+        self.assertEqual(result, expected)
+
+    def test_split_nodes_link_empty_string(self):
+        """Test split_nodes_link with empty string node"""
+        nodes = [TextNode("", TextType.NORMAL_TEXT)]
+        result = split_nodes_link(nodes)
+        self.assertEqual(result, [])
+
+    def test_split_nodes_link_no_links(self):
+        """Test split_nodes_link with text but no links"""
+        nodes = [TextNode("Just plain text", TextType.NORMAL_TEXT)]
+        result = split_nodes_link(nodes)
+        expected = [TextNode("Just plain text", TextType.NORMAL_TEXT)]
+        self.assertEqual(result, expected)
+
+class TestTextToTextnodes(unittest.TestCase):
+    
+    def test_plain_text(self):
+        """Test with plain text only"""
+        text = "This is plain text"
+        result = text_to_textnodes(text)
+        expected = [TextNode("This is plain text", TextType.NORMAL_TEXT)]
+        self.assertEqual(result, expected)
+
+    def test_bold_text(self):
+        """Test with bold markdown"""
+        text = "This is **bold** text"
+        result = text_to_textnodes(text)
+        expected = [
+            TextNode("This is ", TextType.NORMAL_TEXT),
+            TextNode("bold", TextType.BOLD_TEXT),
+            TextNode(" text", TextType.NORMAL_TEXT)
+        ]
+        self.assertEqual(result, expected)
+
+    def test_italic_text(self):
+        """Test with italic markdown"""
+        text = "This is _italic_ text"
+        result = text_to_textnodes(text)
+        expected = [
+            TextNode("This is ", TextType.NORMAL_TEXT),
+            TextNode("italic", TextType.ITALIC_TEXT),
+            TextNode(" text", TextType.NORMAL_TEXT)
+        ]
+        self.assertEqual(result, expected)
+
+    def test_code_text(self):
+        """Test with code markdown"""
+        text = "This is `code` text"
+        result = text_to_textnodes(text)
+        expected = [
+            TextNode("This is ", TextType.NORMAL_TEXT),
+            TextNode("code", TextType.CODE_TEXT),
+            TextNode(" text", TextType.NORMAL_TEXT)
+        ]
+        self.assertEqual(result, expected)
+
+    def test_link_text(self):
+        """Test with link markdown"""
+        text = "This is [link](http://example.com) text"
+        result = text_to_textnodes(text)
+        expected = [
+            TextNode("This is ", TextType.NORMAL_TEXT),
+            TextNode("link", TextType.LINKS, "http://example.com"),
+            TextNode(" text", TextType.NORMAL_TEXT)
+        ]
+        self.assertEqual(result, expected)
+
+    def test_image_text(self):
+        """Test with image markdown"""
+        text = "This is ![image](http://example.com/img.jpg) text"
+        result = text_to_textnodes(text)
+        expected = [
+            TextNode("This is ", TextType.NORMAL_TEXT),
+            TextNode("image", TextType.IMAGES, "http://example.com/img.jpg"),
+            TextNode(" text", TextType.NORMAL_TEXT)
+        ]
+        self.assertEqual(result, expected)
+
+    def test_mixed_markdown(self):
+        """Test with multiple markdown types"""
+        text = "This is **bold** and _italic_ with [link](http://example.com)"
+        result = text_to_textnodes(text)
+        expected = [
+            TextNode("This is ", TextType.NORMAL_TEXT),
+            TextNode("bold", TextType.BOLD_TEXT),
+            TextNode(" and ", TextType.NORMAL_TEXT),
+            TextNode("italic", TextType.ITALIC_TEXT),
+            TextNode(" with ", TextType.NORMAL_TEXT),
+            TextNode("link", TextType.LINKS, "http://example.com")
+        ]
+        self.assertEqual(result, expected)
+
+    def test_empty_string(self):
+        """Test with empty string"""
+        text = ""
+        with self.assertRaises(Exception):
+            text_to_textnodes(text)
+
+    def test_multiple_instances(self):
+        """Test with multiple instances of same markdown"""
+        text = "**bold1** and **bold2**"
+        result = text_to_textnodes(text)
+        expected = [
+            TextNode("bold1", TextType.BOLD_TEXT),
+            TextNode(" and ", TextType.NORMAL_TEXT),
+            TextNode("bold2", TextType.BOLD_TEXT)
+        ]
+        self.assertEqual(result, expected)
+
+    def test_complex_combination(self):
+        """Test with complex combination of all markdown types"""
+        text = "This is **text** with an _italic_ word and a `code block` and an ![obi wan image](https://i.imgur.com/fJRm4Vk.jpeg) and a [link](https://bt.dev)"
+        result = text_to_textnodes(text)
+        expected = [
+            TextNode("This is ", TextType.NORMAL_TEXT),
+            TextNode("text", TextType.BOLD_TEXT),
+            TextNode(" with an ", TextType.NORMAL_TEXT),
+            TextNode("italic", TextType.ITALIC_TEXT),
+            TextNode(" word and a ", TextType.NORMAL_TEXT),
+            TextNode("code block", TextType.CODE_TEXT),
+            TextNode(" and an ", TextType.NORMAL_TEXT),
+            TextNode("obi wan image", TextType.IMAGES, "https://i.imgur.com/fJRm4Vk.jpeg"),
+            TextNode(" and a ", TextType.NORMAL_TEXT),
+            TextNode("link", TextType.LINKS, "https://bt.dev"),
+        ]
         self.assertEqual(result, expected)
 
 if __name__ == "__main__":
