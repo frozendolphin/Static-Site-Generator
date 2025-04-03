@@ -1,15 +1,12 @@
-import re
+import os
+import shutil
 
-from textnode import TextNode, TextType
-
+from copy_static import delete_public_content, copy_static_to_public
 
 def main():
-    new_obj = TextNode("im text", TextType.IMAGES)
-    new_obj2 = TextNode("im text", TextType.IMAGES)
-    print(new_obj)
-    print(new_obj == new_obj2)
+    delete_public_content()
+    copy_static_to_public()
     
-
     
 if __name__ == "__main__":
     main()
