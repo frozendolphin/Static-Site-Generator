@@ -17,7 +17,7 @@ The project takes markdown files as input and generates static HTML pages, makin
 
 1. Keep markdown files in `content/`
 2. Run local server with main.sh script:
-```./main,sh```
+```./main.sh```
 the python server will start at `http://localhost:8888/`
 
 #### Building for Deployment
