@@ -7,7 +7,6 @@ def delete_public_content():
     if os.path.exists("./public"):
         shutil.rmtree("./public")
     os.mkdir("public")
-
     
 def copy_static_to_public():  
     if not os.path.exists("./static"):
@@ -20,7 +19,7 @@ def copy_static_to_public():
 def get_static_file_list(folder_path):
     file_paths = []
     for path in os.listdir(folder_path):
-        new_path = f"{folder_path}/{path}"
+        new_path = os.path.join(folder_path, path)
         if os.path.isfile(new_path):
             file_paths.append(new_path)
         if os.path.isdir(new_path):
