@@ -83,17 +83,12 @@ def paragraph_to_html_node(block):
 
 
 def heading_to_html_node(block):
-    level = 0
-    for char in block:
-        if char == "#":
-            level += 1
-        else:
-            break
-    if level + 1 >= len(block):
-        raise ValueError(f"invalid heading level: {level}")
-    text = block[level + 1 :]
+    head = len(block) - len(block.lstrip("#"))
+    if head + 1 >= len(block):
+        raise ValueError(f"invalid heading level: {head}")
+    text = block[head + 1 :]
     children = text_to_children(text)
-    return ParentNode(f"h{level}", children)
+    return ParentNode(f"h{head}", children)
 
 
 def code_to_html_node(block):
