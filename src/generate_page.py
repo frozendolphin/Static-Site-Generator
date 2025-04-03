@@ -1,4 +1,4 @@
-
+import os
 
 from block_markdown import markdown_to_html_node
 
@@ -29,3 +29,16 @@ def generate_page(from_path, template_path, dest_path):
     
     with open(dest_path, "w") as h:
         h.write(new_template)
+        
+def generate_pages_recursive(dir_path_content, template_path, dest_dir_path):
+    
+    for content in os.listdir(dir_path_content):
+        new_path = os.path.join(dir_path_content, content)
+        new_dest = os.path.join(dest_dir_path, content)
+        new_dest = new_dest.replace("md", "html")
+        if os.path.isfile(new_path):
+            generate_page(new_path, template_path, new_dest)
+        if os.path.isdir(new_path):
+            if not os.path.exists(new_dest):
+                os.mkdir(new_dest)
+            generate_pages_recursive(new_path, template_path, new_dest)    
